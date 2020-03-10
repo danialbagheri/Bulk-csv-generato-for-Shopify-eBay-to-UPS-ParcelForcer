@@ -1,4 +1,5 @@
 import csv
+import datetime
 
 orderFile = open('orders.csv', newline='')
 dpdfile = open('dpd.csv', newline='')
@@ -6,6 +7,7 @@ orders = csv.reader(orderFile)
 trackings = csv.reader(dpdfile)
 all_orders = []
 all_shipping = []
+
 
 for row in orders:
     orders = {}
@@ -26,8 +28,10 @@ for i in trackings:
 
 
 def compare_lists(orders, shipping):
+    today = datetime.datetime.now()
+    file_name_date = today.strftime("%Y-%m-%d")
     successful_count = 0
-    with open('fileExchange.csv', 'w', newline='') as fileExchange:
+    with open(f'archive/fileExchange-{file_name_date}.csv', 'w', newline='') as fileExchange:
         fieldnames = [
             'Action',
             'ItemID',
@@ -75,4 +79,3 @@ compare_lists(all_orders, all_shipping)
 
 # response = requests.post(url,data=body,headers=headers)
 # print response.content
-
