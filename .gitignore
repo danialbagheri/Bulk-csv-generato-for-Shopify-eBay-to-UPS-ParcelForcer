@@ -1,0 +1,9 @@
+dpd.csv
+orders.csv
+fileExchanged.csv
+archive/*
+venv/*
+venv
+.vscode
+.DS_Store
+
