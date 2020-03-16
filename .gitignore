@@ -6,4 +6,6 @@ venv/*
 venv
 .vscode
 .DS_Store
-
+*/imports/*
+*/exports/*
+*.csv
