@@ -26,7 +26,7 @@ def fill_the_empty(row_number):
             orders['address 2'] = order[37]
             orders['company'] = order[38]
             orders['city'] = order[39]
-            orders['county'] = order[42]
+            orders['country'] = order[42]
             orders['post_code'] = order[40].replace(" ", "")
             orders['notes'] = order[44]
             orders['phone'] = order[66]
@@ -38,6 +38,7 @@ def fill_the_empty(row_number):
 
 def process_orders():
     all_orders = []
+    ups_orders = []
     order_file = open('imports/orders.csv', newline='')
     orders_reader = csv.reader(order_file)
     row_count = 0
@@ -54,6 +55,7 @@ def process_orders():
             item_name = row[17]
             financial_status = row[2]
             status = row[4]
+            order_number = row[0]
             # customer details needs repeating if financial status is empty
             if financial_status == "":
                 orders = fill_the_empty(row_count)
@@ -69,7 +71,7 @@ def process_orders():
                 orders['address 2'] = row[37]
                 orders['company'] = row[38]
                 orders['city'] = row[39]
-                orders['county'] = row[42]
+                orders['country'] = row[42]
                 orders['post_code'] = row[40].replace(" ", "")
                 orders['notes'] = row[44]
                 orders['phone'] = row[66]
@@ -83,25 +85,32 @@ def process_orders():
             else:
                 quantity = 0
 
-            if item_name == "Anti Bacterial Hand Hygiene Gel - 5Litre" and status == "unfulfilled":
+            belfast = orders['post_code'].startswith('BT')
+            if status == "unfulfilled" and orders['payment_status'] == "paid" and belfast == False:
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
                         all_orders.append(orders)
                 elif quantity == 1:
                     all_orders.append(orders)
+
                 else:
                     print(
-                        f"order on line {row_count} is has {quantity} items and must be sent differently")
+                        f"order number {orders['order_number']} is has {quantity} items and must be sent differently")
+            elif status == "unfulfilled":
+                if quantity >= 2 and quantity <= 9:
+                    ups_orders.append(orders)
+                    print(
+                        f"order number: {order_number} is outside UK mainland")
         row_count += 1
 
     order_file.close()
-    return all_orders
+    return all_orders, ups_orders
 
 
 # def writes_csv()
 
 
-def create_tables_for_csv(orders):
+def create_orders_for_city_sprint(orders):
     today = datetime.datetime.now()  # "13/02/2019"
     max_entries = 240
     file_number = 1
@@ -147,8 +156,100 @@ def create_tables_for_csv(orders):
     print(
         f"generated {successful_count} address entries for city-Sprint")
     print(f"{file_name}-{file_name_date}.csv")
+    file.close()
+
+
+def create_ups_file(orders):
+    '''
+    Created UPS csv file to be imported
+    User this link or more info: https://www.ups.com/gb/en/shipping/create/shipping/create/batch-file.page
+    '''
+    today = datetime.datetime.now()  # "13/02/2019"
+    max_entries = 240
+    file_number = 1
+    file_name_date = today.strftime("%Y-%m-%d")
+    successful_count = 0
+    file = open(
+        f'exports/ups-address-labels-{file_name_date}-{file_number}.csv', 'w', newline='')
+    fieldnames = [
+        'Contact Name',
+        'Company or Name',
+        'Country',
+        'address 1',
+        'Address 2',
+        'City',
+        'Postal Code',
+        'Telephone',
+        'Extension',
+        'E-mail Address',
+        'Weight',
+        'Length',
+        'Width',
+        'Height',
+        'Unit of Measure',
+        '1,Reference',
+        'Packaging Type',
+        'Declared Value',  # Not required
+        'service',
+        'Delivery Confirmation',
+        'Email Notification 1 - Address',
+        ''
+
+    ]
+    shippingwriter = csv.DictWriter(
+        file, fieldnames=fieldnames)
+    shippingwriter.writeheader()
+
+    for order in orders:
+        if order['company']:
+            company = order['company'] + " - " + order['customer_name']
+        else:
+            company = order['customer_name']
+        shippingwriter.writerow({
+            'Contact Name': order["customer_name"],
+            'Company or Name': company,
+            'Country': order['country'],
+            'address 1': order['address 1'],
+            'Address 2': order['address 2'],
+            'City': order['city'],
+            'Postal Code': order['post_code'],
+            'Telephone': order['phone'],
+            'Extension': "",
+            'E-mail Address': order['email'],
+            'Weight': 1,
+            'Length': 60,
+            'Width': 40,
+            'Height': 30,
+            'Unit of Measure': '',
+            '1,Reference': order['order_number'],
+            'Packaging Type': '25',
+            'Declared Value': "82,50",
+            'service': '07',
+            'Delivery Confirmation': 'S',  # meaning signature required
+            'Email Notification 1 - Address': order['email'],
+
+        }
+        )
+        successful_count += 1
+    print(
+        f"Found {successful_count} ups orders")
+    print(f"exports/ups-address-labels-{file_name_date}.csv")
 
 
 # process_orders()
-orders = process_orders()
-create_tables_for_csv(orders)
+source = input("Please enter S for Shopify and E for Ebay: \n")
+courier = input(
+    "please enter the courier: U for UPS and P for Parcel Force (parcel force outside UK Mainland will be exported to UPS): \n")
+source = source.upper()
+courier = courier.upper()
+if source == "S" and courier == "P":
+    orders, ups_orders = process_orders()
+    create_orders_for_city_sprint(orders)
+    create_ups_file(ups_orders)
+elif source == "S" and courier == "U":
+    orders, ups_orders = process_orders()
+    full_list = orders + ups_orders
+    create_ups_file(full_list)
+else:
+    print(
+        f"Wrong Input or the software the entry is not yet supported {source} and {courier} ")
