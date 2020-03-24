@@ -1,12 +1,19 @@
+import os
 import csv
 import datetime
-import pdb
-
+# import pdb
 
 # ups_file = open('ups/ups_tracking_numbers.csv', newline='')
 
 # tracking_numbers = csv.reader(ups_file)
+
+
 def fill_the_empty(row_number):
+    '''
+    This fills the rows in the shopify orders when a customer have bought more than
+    one item. Please check the orders.csv file to understand.
+    proobably doesn't do anything at the moment!
+    '''
     count = 0
     order_file = open('imports/orders.csv', newline='')
     orders_reader = csv.reader(order_file)
@@ -36,10 +43,15 @@ def fill_the_empty(row_number):
     return orders
 
 
-def process_orders():
-    all_orders = []
+def process_shopify_orders(file_path=None):
+    if file_path:
+        path = file_path
+    else:
+        path = 'imports/orders.csv'
+    message = ""
+    parcel_force_orders = []
     ups_orders = []
-    order_file = open('imports/orders.csv', newline='')
+    order_file = open(path, newline='')
     orders_reader = csv.reader(order_file)
     row_count = 0
     col_count = 0
@@ -85,26 +97,24 @@ def process_orders():
             else:
                 quantity = 0
 
-            belfast = orders['post_code'].startswith('BT')
-            if status == "unfulfilled" and orders['payment_status'] == "paid" and belfast == False:
+            northern_ireland = orders['post_code'].lower().startswith('bt')
+            if status == "unfulfilled" and orders['payment_status'] == "paid" and northern_ireland == False:
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
-                        all_orders.append(orders)
+                        parcel_force_orders.append(orders)
                 elif quantity == 1:
-                    all_orders.append(orders)
+                    parcel_force_orders.append(orders)
 
                 else:
-                    print(
-                        f"order number {orders['order_number']} is has {quantity} items and must be sent differently")
+                    message += f"order number {orders['order_number']} is has {quantity} items and must be sent differently \n"
             elif status == "unfulfilled":
                 if quantity >= 2 and quantity <= 9:
                     ups_orders.append(orders)
-                    print(
-                        f"order number: {order_number} is outside UK mainland")
+                    message += f"order number: {order_number} is in Northern Ireland.\n "
         row_count += 1
 
     order_file.close()
-    return all_orders, ups_orders
+    return message, parcel_force_orders, ups_orders
 
 
 # def writes_csv()
@@ -159,97 +169,118 @@ def create_orders_for_city_sprint(orders):
     file.close()
 
 
-def create_ups_file(orders):
+def create_ups_file(orders, file_path=None):
     '''
     Created UPS csv file to be imported
     User this link or more info: https://www.ups.com/gb/en/shipping/create/shipping/create/batch-file.page
     '''
+    if file_path:
+        return file_path
+    else:
+        file_path = "exports/"
     today = datetime.datetime.now()  # "13/02/2019"
     max_entries = 240
     file_number = 1
+    message = ""
     file_name_date = today.strftime("%Y-%m-%d")
     successful_count = 0
-    file = open(
-        f'exports/ups-address-labels-{file_name_date}-{file_number}.csv', 'w', newline='')
-    fieldnames = [
-        'Contact Name',
-        'Company or Name',
-        'Country',
-        'address 1',
-        'Address 2',
-        'City',
-        'Postal Code',
-        'Telephone',
-        'Extension',
-        'E-mail Address',
-        'Weight',
-        'Length',
-        'Width',
-        'Height',
-        'Unit of Measure',
-        '1,Reference',
-        'Packaging Type',
-        'Declared Value',  # Not required
-        'service',
-        'Delivery Confirmation',
-        'Email Notification 1 - Address',
-        ''
+    dirName = 'exports'
+    try:
+        os.mkdir(dirName)
+        message += f"Directory {dirName} Created \n"
+    except:
+        message += f"Directory {dirName} already exists \n"
+    try:
+        file = open(
+            f'{file_path}ups-address-labels-{file_name_date}-{file_number}.csv', 'w', newline='')
+        fieldnames = [
+            'Contact',
+            'Company_or_name',
+            'Country',
+            'Address_1',
+            'Address_2',
+            'City',
+            'Postal_Code',
+            'Telephone',
+            'Extension',
+            'Email_Address',
+            'Weight',
+            'Length',
+            'Width',
+            'Height',
+            'Unit_of_Measure',
+            'Reference',
+            'Packaging_Type',
+            'Declared_Value',  # Not required
+            'service',
+            'Delivery_Confirmation',
+            'Email_Notification_1_Address',
+            'residential_indicator',
+            'bill_transportation_to',
+            'number_of_package'
 
-    ]
-    shippingwriter = csv.DictWriter(
-        file, fieldnames=fieldnames)
-    shippingwriter.writeheader()
+        ]
+        shippingwriter = csv.DictWriter(
+            file, fieldnames=fieldnames)
+        shippingwriter.writeheader()
 
-    for order in orders:
-        if order['company']:
-            company = order['company'] + " - " + order['customer_name']
-        else:
-            company = order['customer_name']
-        shippingwriter.writerow({
-            'Contact Name': order["customer_name"],
-            'Company or Name': company,
-            'Country': order['country'],
-            'address 1': order['address 1'],
-            'Address 2': order['address 2'],
-            'City': order['city'],
-            'Postal Code': order['post_code'],
-            'Telephone': order['phone'],
-            'Extension': "",
-            'E-mail Address': order['email'],
-            'Weight': 1,
-            'Length': 60,
-            'Width': 40,
-            'Height': 30,
-            'Unit of Measure': '',
-            '1,Reference': order['order_number'],
-            'Packaging Type': '25',
-            'Declared Value': "82,50",
-            'service': '07',
-            'Delivery Confirmation': 'S',  # meaning signature required
-            'Email Notification 1 - Address': order['email'],
+        for order in orders:
+            if order['company']:
+                company = order['company'] + " - " + order['customer_name']
+            else:
+                company = order['customer_name']
+            shippingwriter.writerow({
+                'Contact': order["customer_name"],
+                'Company_or_name': company,
+                'Country': "GB",
+                'Address_1': order['address 1'],
+                'Address_2': order['address 2'],
+                'City': order['city'],
+                'Postal_Code': order['post_code'],
+                'Telephone': order['phone'],
+                'Extension': "",
+                'Email_Address': order['email'],
+                'Weight': 6,
+                'Length': 60,
+                'Width': 40,
+                'Height': 30,
+                'Unit_of_Measure': '',
+                'Reference': order['order_number'],
+                'Packaging_Type': '2',
+                'Declared_Value': "82,50",
+                'service': "ST",
+                'Delivery_Confirmation': 'S',  # meaning signature required
+                'Email_Notification_1_Address': order['email'],
+                'residential_indicator': 1,
+                'bill_transportation_to': 'Shipper',
+                'number_of_package': 1
+            }
+            )
+            successful_count += 1
+        message += f"Found {successful_count} ups orders \n {file_path}ups-address-labels-{file_name_date}.csv"
+    except:
+        message += "something went wrong creating the UPS file"
 
-        }
-        )
-        successful_count += 1
-    print(
-        f"Found {successful_count} ups orders")
-    print(f"exports/ups-address-labels-{file_name_date}.csv")
+    return message
 
 
-# process_orders()
 source = input("Please enter S for Shopify and E for Ebay: \n")
 courier = input(
     "please enter the courier: U for UPS and P for Parcel Force (parcel force outside UK Mainland will be exported to UPS): \n")
 source = source.upper()
 courier = courier.upper()
 if source == "S" and courier == "P":
-    orders, ups_orders = process_orders()
-    create_orders_for_city_sprint(orders)
+    message, parcel_force_orders, ups_orders = process_shopify_orders()
+    print(message)
+    create_orders_for_city_sprint(parcel_force_orders)
     create_ups_file(ups_orders)
 elif source == "S" and courier == "U":
-    orders, ups_orders = process_orders()
-    full_list = orders + ups_orders
-    create_ups_file(full_list)
+    message, parcel_force_orders, ups_orders = process_shopify_orders()
+    print(message)
+    full_list = parcel_force_orders + ups_orders
+    full_list = sorted(full_list, key=lambda i: i['order_number'])
+    ups = create_ups_file(full_list)
+    print(ups)
 else:
     print(
         f"Wrong Input or the software the entry is not yet supported {source} and {courier} ")

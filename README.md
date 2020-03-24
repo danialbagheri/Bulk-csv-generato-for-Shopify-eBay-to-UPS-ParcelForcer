@@ -1,10 +1,41 @@
-# dpd_tracking_number_to_ebay_orders
-This python applications generates a  csv file with "Mark as dispatched template" of Ebay 2020
+# Shopify and eBay to UPS and ParcelForce CSV generator
 
+This python applications generates a csv file with "Mark as dispatched template" of Ebay 2020
+
+## GUI (work in progress)
+
+The GUI is designed and developed with Python QT library.
+
+![Image of GUI](./qt-design/ui.png)
 
 ## Step By step instructions
 
-1. download the csv file of all the "consignment" number with the "post code" of customers and save it as `dpd.csv`.
-2. Download the csv file of all the existing orders from ebay and save it as `orders.csv`.
-3. Software will find the post code and match all the ebay orders and will create the template `fileExchange.csv`.
-4. Upload the file in under selling > File Exchange > upload
+You have to first create a virtual environment:
+
+```
+python3 -m venv venv
+```
+
+You have to enable virtual environment after that:
+
+```
+source venv/bin/activate
+```
+
+now, you need install the libraries with PIP:
+
+```
+pip install -r requirements.txt
+```
+
+now you are ready! you now can go to ebay or shopify folder and you can execute the code by just typing:
+
+```
+python csv_generator.py
+```
+
+to test the GUI, use the below command:
+
+```
+python main.py
+```
