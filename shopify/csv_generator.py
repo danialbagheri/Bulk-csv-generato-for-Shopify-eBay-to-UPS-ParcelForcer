@@ -106,10 +106,11 @@ def process_shopify_orders(file_path=None):
                     parcel_force_orders.append(orders)
 
                 else:
-                    message += f"order number {orders['order_number']} is has {quantity} items and must be sent differently \n"
-            elif status == "unfulfilled":
+                    message += f"order number {orders['order_number']} has {quantity} items and must be sent differently \n"
+            elif status == "unfulfilled" and northern_ireland and orders['payment_status'] == "paid":
                 if quantity >= 2 and quantity <= 9:
-                    ups_orders.append(orders)
+                    for i in range(quantity):
+                        ups_orders.append(orders)
                     message += f"order number: {order_number} is in Northern Ireland.\n "
         row_count += 1
 
@@ -179,7 +180,7 @@ def create_ups_file(orders, file_path=None):
     else:
         file_path = "exports/"
     today = datetime.datetime.now()  # "13/02/2019"
-    max_entries = 240
+    max_entries = 200
     file_number = 1
     message = ""
     file_name_date = today.strftime("%Y-%m-%d")
