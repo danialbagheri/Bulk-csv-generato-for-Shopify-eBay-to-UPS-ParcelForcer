@@ -112,6 +112,9 @@ def process_shopify_orders(file_path=None):
                     for i in range(quantity):
                         ups_orders.append(orders)
                     message += f"order number: {order_number} is in Northern Ireland.\n "
+                elif quantity == 1:
+                    ups_orders.append(orders)
+                    message += f"order number: {order_number} is in Northern Ireland.\n "
         row_count += 1
 
     order_file.close()
