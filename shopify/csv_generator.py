@@ -121,6 +121,83 @@ def process_shopify_orders(file_path=None):
     return message, parcel_force_orders, ups_orders
 
 
+def process_amazon_orders(file_path=None):
+    if file_path:
+        path = file_path
+    else:
+        path = 'imports/amazon-orders.csv'
+    message = ""
+    parcel_force_orders = []
+    ups_orders = []
+    order_file = open(path, newline='')
+    orders_reader = csv.reader(order_file)
+    row_count = 0
+    col_count = 0
+    for row in orders_reader:
+        if row_count < 1:
+            for col in row:
+                # print(f"col {col_count}: row: {col} \n")
+                col_count += 1
+        if row_count >= 1:
+            # pdb.set_trace()
+            orders = {}
+            quantity = row[16]
+            item_name = row[17]
+            financial_status = row[2]
+            status = row[4]
+            order_number = row[0]
+            # customer details needs repeating if financial status is empty
+            if financial_status == "":
+                orders = fill_the_empty(row_count)
+            else:
+                orders['order_number'] = row[0]
+                orders['item_name'] = row[17]
+                orders['quantity'] = row[16]
+                orders['email'] = row[1]
+                orders['payment_status'] = row[2]
+                orders['price'] = row[18]
+                orders['customer_name'] = row[34]
+                orders['address 1'] = row[36]
+                orders['address 2'] = row[37]
+                orders['company'] = row[38]
+                orders['city'] = row[39]
+                orders['country'] = row[42]
+                orders['post_code'] = row[40].replace(" ", "")
+                orders['notes'] = row[44]
+                orders['phone'] = row[66]
+                orders["status"] = row[4]
+
+            if quantity:
+                try:
+                    quantity = int(quantity)
+                except:
+                    continue
+            else:
+                quantity = 0
+
+            northern_ireland = orders['post_code'].lower().startswith('bt')
+            if status == "unfulfilled" and orders['payment_status'] == "paid" and northern_ireland == False:
+                if quantity >= 2 and quantity <= 9:
+                    for i in range(quantity):
+                        parcel_force_orders.append(orders)
+                elif quantity == 1:
+                    parcel_force_orders.append(orders)
+
+                else:
+                    message += f"order number {orders['order_number']} has {quantity} items and must be sent differently \n"
+            elif status == "unfulfilled" and northern_ireland and orders['payment_status'] == "paid":
+                if quantity >= 2 and quantity <= 9:
+                    for i in range(quantity):
+                        ups_orders.append(orders)
+                    message += f"order number: {order_number} is in Northern Ireland.\n "
+                elif quantity == 1:
+                    ups_orders.append(orders)
+                    message += f"order number: {order_number} is in Northern Ireland.\n "
+        row_count += 1
+
+    order_file.close()
+    return message, parcel_force_orders, ups_orders
+
 # def writes_csv()
 
 
@@ -132,7 +209,7 @@ def create_orders_for_city_sprint(orders):
     successful_count = 0
     file_name = "exports/city-sprint-address-labels"
     file = open(
-        f'{file_name}-{file_name_date}-{file_number}.csv', 'w', newline='')
+        f'{file_name}-{file_name_date}-{file_number}.csv', 'wb', newline='')
     fieldnames = [
         'Recipient Business Name',
         'Recipient Address Line 1',
@@ -262,13 +339,14 @@ def create_ups_file(orders, file_path=None):
             )
             successful_count += 1
         message += f"Found {successful_count} ups orders \n {file_path}ups-address-labels-{file_name_date}.csv"
+        file.close()
     except:
         message += "something went wrong creating the UPS file"
 
     return message
 
 
-source = input("Please enter S for Shopify and E for Ebay: \n")
+source = input("Please enter S for Shopify and E for Ebay, A for Amazon: \n")
 courier = input(
     "please enter the courier: U for UPS and P for Parcel Force (parcel force outside UK Mainland will be exported to UPS): \n")
 source = source.upper()
@@ -280,6 +358,13 @@ if source == "S" and courier == "P":
     create_ups_file(ups_orders)
 elif source == "S" and courier == "U":
     message, parcel_force_orders, ups_orders = process_shopify_orders()
+    print(message)
+    full_list = parcel_force_orders + ups_orders
+    full_list = sorted(full_list, key=lambda i: i['order_number'])
+    ups = create_ups_file(full_list)
+    print(ups)
+elif source == "A" and courier == "U":
+    message, parcel_force_orders, ups_orders = process_amazon_orders()
     print(message)
     full_list = parcel_force_orders + ups_orders
     full_list = sorted(full_list, key=lambda i: i['order_number'])
