@@ -47,7 +47,7 @@ def process_shopify_orders(file_path=None):
     if file_path:
         path = file_path
     else:
-        path = 'imports/shopify_orders.csv'
+        path = 'imports/shopify-orders.csv'
     message = ""
     parcel_force_orders = []
     ups_orders = []
@@ -173,8 +173,11 @@ def process_amazon_orders(file_path=None):
             else:
                 quantity = 0
 
-            northern_ireland = orders['post_code'].lower().startswith('bt')
-            if northern_ireland == False and orders['country'] == "GB":
+            post_code = orders['post_code'].lower()
+            northern_ireland = post_code.startswith('bt')
+            restricted_post_codes = True if post_code.startswith(
+                'je') else False
+            if northern_ireland == False and orders['country'] == "GB" and restricted_post_codes == False:
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
                         parcel_force_orders.append(orders)
@@ -190,6 +193,8 @@ def process_amazon_orders(file_path=None):
                 elif quantity == 1:
                     ups_orders.append(orders)
                     message += f"order number: {order_number} is in Northern Ireland.\n"
+            elif restricted_post_codes:
+                message += f"order number: {order_number} is in the resterticted post code list. Post Code: {post_code}\n"
             else:
                 message += f"order number:{order_number} is outside UK. country: {orders['country']} \n"
         row_count += 1
