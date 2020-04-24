@@ -15,7 +15,7 @@ def fill_the_empty(row_number):
     proobably doesn't do anything at the moment!
     '''
     count = 0
-    order_file = open('imports/orders.csv', newline='')
+    order_file = open('imports/shopify-orders.csv', newline='')
     orders_reader = csv.reader(order_file)
     previous_row = row_number - 1
     orders = {}
@@ -98,7 +98,8 @@ def process_shopify_orders(file_path=None):
                 quantity = 0
 
             northern_ireland = orders['post_code'].lower().startswith('bt')
-            if status == "unfulfilled" and orders['payment_status'] == "paid" and northern_ireland == False:
+
+            if status == "unfulfilled" and orders['payment_status'] == "paid" and northern_ireland == False and orders['item_name'] == "Anti Bacterial Hand Hygiene Sanitiser Gel - 5Litre":
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
                         parcel_force_orders.append(orders)
@@ -107,7 +108,7 @@ def process_shopify_orders(file_path=None):
 
                 else:
                     message += f"order number {orders['order_number']} has {quantity} items and must be sent differently \n"
-            elif status == "unfulfilled" and northern_ireland and orders['payment_status'] == "paid":
+            elif status == "unfulfilled" and northern_ireland and orders['payment_status'] == "paid" and orders['item_name'] == "Anti Bacterial Hand Hygiene Sanitiser Gel - 5Litre":
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
                         ups_orders.append(orders)
@@ -115,6 +116,8 @@ def process_shopify_orders(file_path=None):
                 elif quantity == 1:
                     ups_orders.append(orders)
                     message += f"order number: {order_number} is in Northern Ireland.\n"
+            elif status == "unfulfilled" and northern_ireland and orders['payment_status'] == "paid" and orders['item_name'] != "Anti Bacterial Hand Hygiene Sanitiser Gel - 5Litre":
+                message += f"order number: {order_number} is to be sent by Royal Mail.\n"
         row_count += 1
 
     order_file.close()
@@ -326,9 +329,9 @@ def create_ups_file(orders, file_path=None, shop_name=None):
                 'Extension': "",
                 'Email_Address': order['email'],
                 'Weight': 6,
-                'Length': 60,
-                'Width': 40,
-                'Height': 30,
+                'Length': 30,
+                'Width': 25,
+                'Height': 25,
                 'Unit_of_Measure': '',
                 'Reference': order['order_number'],
                 'Packaging_Type': '2',
@@ -371,7 +374,7 @@ elif source == "A" and courier == "U":
     message, parcel_force_orders, ups_orders = process_amazon_orders()
     print(message)
     full_list = parcel_force_orders + ups_orders
-    full_list = sorted(full_list, key=lambda i: i['order_number'])
+    # full_list = full_list, key=lambda i: i['order_number'])
     ups = create_ups_file(full_list, shop_name="Amazon")
     print(ups)
 else:
