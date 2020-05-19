@@ -24,6 +24,7 @@ def fill_the_empty(row_number):
         if count == previous_row:
             orders['order_number'] = order[0]
             orders['item_name'] = order[17]
+            orders['sku'] = order[20]
             orders['quantity'] = order[16]
             orders['email'] = order[1]
             orders['status'] = order[2]
@@ -51,6 +52,8 @@ def process_shopify_orders(file_path=None):
     message = ""
     parcel_force_orders = []
     ups_orders = []
+    box_of_500ml = []
+    box_of_200ml = []
     order_file = open(path, newline='')
     orders_reader = csv.reader(order_file)
     row_count = 0
@@ -74,6 +77,7 @@ def process_shopify_orders(file_path=None):
             else:
                 orders['order_number'] = row[0]
                 orders['item_name'] = row[17]
+                orders['sku'] = row[20]
                 orders['quantity'] = row[16]
                 orders['email'] = row[1]
                 orders['payment_status'] = row[2]
@@ -99,29 +103,40 @@ def process_shopify_orders(file_path=None):
 
             northern_ireland = orders['post_code'].lower().startswith('bt')
 
-            if status == "unfulfilled" and orders['payment_status'] == "paid" and northern_ireland == False and orders['item_name'] == "Anti Bacterial Hand Hygiene Sanitiser Gel - 5Litre":
-                if quantity >= 2 and quantity <= 9:
-                    for i in range(quantity):
-                        parcel_force_orders.append(orders)
-                elif quantity == 1:
-                    parcel_force_orders.append(orders)
-
-                else:
-                    message += f"order number {orders['order_number']} has {quantity} items and must be sent differently \n"
-            elif status == "unfulfilled" and northern_ireland and orders['payment_status'] == "paid" and orders['item_name'] == "Anti Bacterial Hand Hygiene Sanitiser Gel - 5Litre":
+            if status == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "5017371155890":
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
                         ups_orders.append(orders)
-                    message += f"order number: {order_number} is in Northern Ireland.\n"
                 elif quantity == 1:
                     ups_orders.append(orders)
-                    message += f"order number: {order_number} is in Northern Ireland.\n"
-            elif status == "unfulfilled" and northern_ireland and orders['payment_status'] == "paid" and orders['item_name'] != "Anti Bacterial Hand Hygiene Sanitiser Gel - 5Litre":
+                else:
+                    message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 5litre \n"
+            elif status == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB11":
+                if quantity >= 2 and quantity <= 9:
+                    for i in range(quantity):
+                        box_of_500ml.append(orders)
+                    message += f"order number: {order_number} is a box of 500ml.\n"
+                elif quantity == 1:
+                    box_of_500ml.append(orders)
+                else:
+                    message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 500ml \n"
+            elif status == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB08":
+                print(order["order_number"])
+                if quantity >= 2 and quantity <= 9:
+                    for i in range(quantity):
+                        box_of_200ml.append(orders)
+
+                elif quantity == 1:
+                    box_of_200ml.append(orders)
+                else:
+                    message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 200ml \n"
+
+            elif status == "unfulfilled":
                 message += f"order number: {order_number} is to be sent by Royal Mail.\n"
         row_count += 1
 
     order_file.close()
-    return message, parcel_force_orders, ups_orders
+    return message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml
 
 
 def process_amazon_orders(file_path=None):
@@ -136,6 +151,8 @@ def process_amazon_orders(file_path=None):
     message = ""
     parcel_force_orders = []
     ups_orders = []
+    box_of_500ml = []
+    box_of_200ml = []
     order_file = open(path, newline='')
     orders_reader = csv.reader(order_file,  delimiter='\t')
     row_count = 0
@@ -152,6 +169,7 @@ def process_amazon_orders(file_path=None):
             item_name = row[11]
             order_number = row[0]
             orders['order_number'] = row[0]
+            orders['sku'] = row[10]
             orders['item_name'] = row[11]
             orders['quantity'] = row[12]
             orders['email'] = row[7]
@@ -180,22 +198,32 @@ def process_amazon_orders(file_path=None):
             northern_ireland = post_code.startswith('bt')
             restricted_post_codes = True if post_code.startswith(
                 'je') else False
-            if northern_ireland == False and orders['country'] == "GB" and restricted_post_codes == False:
-                if quantity >= 2 and quantity <= 9:
-                    for i in range(quantity):
+            if restricted_post_codes == False:
+                if orders['sku'] == "QB-0MQO-FD23":
+                    if quantity >= 2 and quantity <= 9:
+                        for i in range(quantity):
+                            parcel_force_orders.append(orders)
+                    elif quantity == 1:
                         parcel_force_orders.append(orders)
-                elif quantity == 1:
-                    parcel_force_orders.append(orders)
-                else:
-                    message += f"order number {orders['order_number']} has {quantity} items and must be sent differently \n"
-            elif northern_ireland:
-                if quantity >= 2 and quantity <= 9:
-                    for i in range(quantity):
-                        ups_orders.append(orders)
-                    message += f"order number: {order_number} is in Northern Ireland.\n"
-                elif quantity == 1:
-                    ups_orders.append(orders)
-                    message += f"order number: {order_number} is in Northern Ireland.\n"
+                    else:
+                        message += f"order number {orders['order_number']} has {quantity} items and must be sent differently: 5Litre hand sanitiser\n"
+                elif orders['sku'] == "DC-AX5V-S1TE":
+                    if quantity >= 2 and quantity <= 9:
+                        for i in range(quantity):
+                            box_of_500ml.append(orders)
+                    elif quantity == 1:
+                        box_of_500ml.append(orders)
+                    else:
+                        message += f"order number {orders['order_number']} has {quantity} items and must be sent differently:box of 500ml hand sanitiser\n"
+                elif orders['sku'] == "MZ-XFY1-4K59":
+                    if quantity >= 2 and quantity <= 9:
+                        for i in range(quantity):
+                            box_of_200ml.append(orders)
+                    elif quantity == 1:
+                        box_of_200ml.append(orders)
+                    else:
+                        message += f"order number {orders['order_number']} has {quantity} items and must be sent differently:box of 500ml hand sanitiser\n"
+
             elif restricted_post_codes:
                 message += f"order number: {order_number} is in the resterticted post code list. Post Code: {post_code}\n"
             else:
@@ -203,7 +231,7 @@ def process_amazon_orders(file_path=None):
         row_count += 1
 
     order_file.close()
-    return message, parcel_force_orders, ups_orders
+    return message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml
 
 # def writes_csv()
 
@@ -364,18 +392,26 @@ if source == "S" and courier == "P":
     create_orders_for_city_sprint(parcel_force_orders)
     create_ups_file(ups_orders, shop_name="Shopify")
 elif source == "S" and courier == "U":
-    message, parcel_force_orders, ups_orders = process_shopify_orders()
+    message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml = process_shopify_orders()
     print(message)
     full_list = parcel_force_orders + ups_orders
     full_list = sorted(full_list, key=lambda i: i['order_number'])
     ups = create_ups_file(full_list, shop_name="Shopify")
     print(ups)
+    ups = create_ups_file(box_of_500ml, shop_name="Shopify - 500ml")
+    print(ups)
+    ups = create_ups_file(box_of_200ml, shop_name="Shopify - 200ml")
+    print(ups)
 elif source == "A" and courier == "U":
-    message, parcel_force_orders, ups_orders = process_amazon_orders()
+    message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml = process_amazon_orders()
     print(message)
     full_list = parcel_force_orders + ups_orders
     # full_list = full_list, key=lambda i: i['order_number'])
     ups = create_ups_file(full_list, shop_name="Amazon")
+    print(ups)
+    ups = create_ups_file(box_of_500ml, shop_name="Amazon - 500ml")
+    print(ups)
+    ups = create_ups_file(box_of_200ml, shop_name="Amazon - 200ml")
     print(ups)
 else:
     print(
