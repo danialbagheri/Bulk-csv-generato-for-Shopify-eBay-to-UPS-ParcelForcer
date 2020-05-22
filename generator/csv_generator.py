@@ -6,6 +6,7 @@ import datetime
 # ups_file = open('ups/ups_tracking_numbers.csv', newline='')
 
 # tracking_numbers = csv.reader(ups_file)
+total_processed = 0
 
 
 def fill_the_empty(row_number):
@@ -111,6 +112,8 @@ def process_shopify_orders(file_path=None):
                     ups_orders.append(orders)
                 else:
                     message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 5litre \n"
+                    message += f"Customer name: {orders['customer_name']} phone number: {orders['phone']}\n"
+                    message += f"Address: {orders['address 1']}\n {orders['address 2']}\n {orders['post_code']}\n"
             elif status == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB11":
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
@@ -121,7 +124,7 @@ def process_shopify_orders(file_path=None):
                 else:
                     message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 500ml \n"
             elif status == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB08":
-                print(order["order_number"])
+
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
                         box_of_200ml.append(orders)
@@ -207,6 +210,8 @@ def process_amazon_orders(file_path=None):
                         parcel_force_orders.append(orders)
                     else:
                         message += f"order number {orders['order_number']} has {quantity} items and must be sent differently: 5Litre hand sanitiser\n"
+                        message += f"Customer name: {orders['customer_name']}\n Phone Number: {orders['phone']}\n"
+                        message += f"Address:\n {orders['address 1']}\n {orders['address 2']}\n {orders['city']} \n {orders['post_code']}\n"
                 elif orders['sku'] == "DC-AX5V-S1TE":
                     if quantity >= 2 and quantity <= 9:
                         for i in range(quantity):
@@ -305,10 +310,11 @@ def create_ups_file(orders, file_path=None, shop_name=None):
         os.mkdir(dirName)
         message += f"Directory {dirName} Created \n"
     except:
-        message += f"Directory {dirName} already exists \n"
+        pass
     try:
+        full_path = f'{file_path}ups-address-labels-{shop_name}-{file_name_date}.csv'
         file = open(
-            f'{file_path}ups-address-labels-{shop_name}-{file_name_date}.csv', 'w', newline='')
+            full_path, 'w', newline='')
         fieldnames = [
             'Contact',
             'Company_or_name',
@@ -373,7 +379,9 @@ def create_ups_file(orders, file_path=None, shop_name=None):
             }
             )
             successful_count += 1
-        message += f"Found {successful_count} ups orders \n {file_path}ups-address-labels-{file_name_date}.csv"
+
+        message += f"Found {successful_count} orders for {shop_name} \n{full_path}"
+        total_processed += successful_count
         file.close()
     except:
         message += "something went wrong creating the UPS file"
@@ -396,23 +404,25 @@ elif source == "S" and courier == "U":
     print(message)
     full_list = parcel_force_orders + ups_orders
     full_list = sorted(full_list, key=lambda i: i['order_number'])
-    ups = create_ups_file(full_list, shop_name="Shopify")
+    ups = create_ups_file(full_list, shop_name="Shopify - 5litre")
     print(ups)
     ups = create_ups_file(box_of_500ml, shop_name="Shopify - 500ml")
     print(ups)
     ups = create_ups_file(box_of_200ml, shop_name="Shopify - 200ml")
     print(ups)
+    print(total_processed)
 elif source == "A" and courier == "U":
     message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml = process_amazon_orders()
     print(message)
     full_list = parcel_force_orders + ups_orders
     # full_list = full_list, key=lambda i: i['order_number'])
-    ups = create_ups_file(full_list, shop_name="Amazon")
+    ups = create_ups_file(full_list, shop_name="Amazon - 5Litre")
     print(ups)
     ups = create_ups_file(box_of_500ml, shop_name="Amazon - 500ml")
     print(ups)
     ups = create_ups_file(box_of_200ml, shop_name="Amazon - 200ml")
     print(ups)
+    print(total_processed)
 else:
     print(
         f"Wrong Input or the software the entry is not yet supported {source} and {courier} ")
