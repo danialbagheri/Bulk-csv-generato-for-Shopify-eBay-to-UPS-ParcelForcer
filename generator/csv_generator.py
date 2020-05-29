@@ -1,7 +1,7 @@
 import os
 import csv
 import datetime
-# import pdb
+import pdb
 
 # ups_file = open('ups/ups_tracking_numbers.csv', newline='')
 
@@ -21,15 +21,10 @@ def fill_the_empty(row_number):
     previous_row = row_number - 1
     orders = {}
     for order in orders_reader:
-        # pdb.set_trace()
         if count == previous_row:
-            orders['order_number'] = order[0]
-            orders['item_name'] = order[17]
-            orders['sku'] = order[20]
-            orders['quantity'] = order[16]
             orders['email'] = order[1]
-            orders['status'] = order[2]
-            orders['price'] = order[18]
+            orders['status'] = order[4]
+            orders['payment_status'] = order[2]
             orders['customer_name'] = order[34]
             orders['address 1'] = order[36]
             orders['address 2'] = order[37]
@@ -40,6 +35,12 @@ def fill_the_empty(row_number):
             orders['notes'] = order[44]
             orders['phone'] = order[66]
             orders["status"] = order[4]
+        elif count == row_number:
+            orders['order_number'] = order[0]
+            orders['item_name'] = order[17]
+            orders['sku'] = order[20]
+            orders['quantity'] = order[16]
+            orders['price'] = order[18]
         count += 1
     order_file.close()
     return orders
@@ -70,12 +71,12 @@ def process_shopify_orders(file_path=None):
             quantity = row[16]
             item_name = row[17]
             financial_status = row[2]
-            status = row[4]
             order_number = row[0]
             # customer details needs repeating if financial status is empty
             if financial_status == "":
                 orders = fill_the_empty(row_count)
             else:
+                orders['status'] = row[4]
                 orders['order_number'] = row[0]
                 orders['item_name'] = row[17]
                 orders['sku'] = row[20]
@@ -103,8 +104,7 @@ def process_shopify_orders(file_path=None):
                 quantity = 0
 
             northern_ireland = orders['post_code'].lower().startswith('bt')
-
-            if status == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "5017371155890":
+            if orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "5017371155890":
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
                         ups_orders.append(orders)
@@ -114,7 +114,7 @@ def process_shopify_orders(file_path=None):
                     message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 5litre \n"
                     message += f"Customer name: {orders['customer_name']} phone number: {orders['phone']}\n"
                     message += f"Address: {orders['address 1']}\n {orders['address 2']}\n {orders['post_code']}\n"
-            elif status == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB11":
+            elif orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB11":
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
                         box_of_500ml.append(orders)
@@ -123,7 +123,7 @@ def process_shopify_orders(file_path=None):
                     box_of_500ml.append(orders)
                 else:
                     message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 500ml \n"
-            elif status == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB08":
+            elif orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB08":
 
                 if quantity >= 2 and quantity <= 9:
                     for i in range(quantity):
@@ -134,7 +134,7 @@ def process_shopify_orders(file_path=None):
                 else:
                     message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 200ml \n"
 
-            elif status == "unfulfilled":
+            elif orders['status'] == "unfulfilled":
                 message += f"order number: {order_number} is to be sent by Royal Mail.\n"
         row_count += 1
 
