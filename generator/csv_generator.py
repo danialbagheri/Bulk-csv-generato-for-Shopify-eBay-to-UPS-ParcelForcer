@@ -202,7 +202,7 @@ def process_amazon_orders(file_path=None):
             restricted_post_codes = True if post_code.startswith(
                 'je') else False
             if restricted_post_codes == False:
-                if orders['sku'] == "QB-0MQO-FD23":
+                if orders['sku'] == "QB-0MQO-FD23" or orders['sku'] == "XC-TWRQ-9ZGO":
                     if quantity >= 2 and quantity <= 9:
                         for i in range(quantity):
                             parcel_force_orders.append(orders)
