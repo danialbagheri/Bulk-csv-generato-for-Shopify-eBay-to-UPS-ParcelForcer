@@ -2,7 +2,7 @@ import os
 import csv
 import datetime
 import pdb
-
+from ebay import process_ebay_orders
 # ups_file = open('ups/ups_tracking_numbers.csv', newline='')
 
 # tracking_numbers = csv.reader(ups_file)
@@ -56,6 +56,8 @@ def process_shopify_orders(file_path=None):
     ups_orders = []
     box_of_500ml = []
     box_of_200ml = []
+    box_of_100ml = []
+    box_of_50ml = []
     order_file = open(path, newline='')
     orders_reader = csv.reader(order_file)
     row_count = 0
@@ -104,8 +106,8 @@ def process_shopify_orders(file_path=None):
                 quantity = 0
 
             northern_ireland = orders['post_code'].lower().startswith('bt')
-            if orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "5017371155890":
-                if quantity >= 2 and quantity <= 9:
+            if orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and (orders['sku'] == "5017371155890" or orders['sku'] == "CALB10"):
+                if quantity >= 2 and quantity <= 8:
                     for i in range(quantity):
                         ups_orders.append(orders)
                 elif quantity == 1:
@@ -114,18 +116,17 @@ def process_shopify_orders(file_path=None):
                     message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 5litre \n"
                     message += f"Customer name: {orders['customer_name']} phone number: {orders['phone']}\n"
                     message += f"Address: {orders['address 1']}\n {orders['address 2']}\n {orders['post_code']}\n"
-            elif orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB11":
-                if quantity >= 2 and quantity <= 9:
+            elif orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB11BOX":
+                if quantity >= 2 and quantity <= 8:
                     for i in range(quantity):
                         box_of_500ml.append(orders)
-                    message += f"order number: {order_number} is a box of 500ml.\n"
                 elif quantity == 1:
                     box_of_500ml.append(orders)
                 else:
                     message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 500ml \n"
-            elif orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB08":
+            elif orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB08BOX":
 
-                if quantity >= 2 and quantity <= 9:
+                if quantity >= 2 and quantity <= 8:
                     for i in range(quantity):
                         box_of_200ml.append(orders)
 
@@ -133,13 +134,33 @@ def process_shopify_orders(file_path=None):
                     box_of_200ml.append(orders)
                 else:
                     message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 200ml \n"
+            elif orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB07BOX":
+
+                if quantity >= 2 and quantity <= 8:
+                    for i in range(quantity):
+                        box_of_100ml.append(orders)
+
+                elif quantity == 1:
+                    box_of_100ml.append(orders)
+                else:
+                    message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 100ml \n"
+            elif orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and orders['sku'] == "CALB06BOX":
+
+                if quantity >= 2 and quantity <= 8:
+                    for i in range(quantity):
+                        box_of_50ml.append(orders)
+
+                elif quantity == 1:
+                    box_of_50ml.append(orders)
+                else:
+                    message += f"order number {orders['order_number']} has {quantity} items and must be sent differently. 50ml \n"
 
             elif orders['status'] == "unfulfilled":
                 message += f"order number: {order_number} is to be sent by Royal Mail.\n"
         row_count += 1
 
     order_file.close()
-    return message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml
+    return message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml, box_of_100ml, box_of_50ml
 
 
 def process_amazon_orders(file_path=None):
@@ -203,7 +224,7 @@ def process_amazon_orders(file_path=None):
                 'je') else False
             if restricted_post_codes == False:
                 if orders['sku'] == "QB-0MQO-FD23" or orders['sku'] == "XC-TWRQ-9ZGO":
-                    if quantity >= 2 and quantity <= 9:
+                    if quantity >= 2 and quantity <= 8:
                         for i in range(quantity):
                             parcel_force_orders.append(orders)
                     elif quantity == 1:
@@ -212,22 +233,26 @@ def process_amazon_orders(file_path=None):
                         message += f"order number {orders['order_number']} has {quantity} items and must be sent differently: 5Litre hand sanitiser\n"
                         message += f"Customer name: {orders['customer_name']}\n Phone Number: {orders['phone']}\n"
                         message += f"Address:\n {orders['address 1']}\n {orders['address 2']}\n {orders['city']} \n {orders['post_code']}\n"
-                elif orders['sku'] == "DC-AX5V-S1TE":
-                    if quantity >= 2 and quantity <= 9:
+                elif orders['sku'] == "CALB11BOX1" or orders['sku'] == "CALB11BOX":
+                    if quantity >= 2 and quantity <= 8:
                         for i in range(quantity):
                             box_of_500ml.append(orders)
                     elif quantity == 1:
                         box_of_500ml.append(orders)
                     else:
                         message += f"order number {orders['order_number']} has {quantity} items and must be sent differently:box of 500ml hand sanitiser\n"
-                elif orders['sku'] == "MZ-XFY1-4K59":
-                    if quantity >= 2 and quantity <= 9:
+                        message += f"Customer name: {orders['customer_name']}\n Phone Number: {orders['phone']}\n"
+                        message += f"Address:\n {orders['address 1']}\n {orders['address 2']}\n {orders['city']} \n {orders['post_code']}\n"
+                elif orders['sku'] == "CALB08BOX":
+                    if quantity >= 2 and quantity <= 8:
                         for i in range(quantity):
                             box_of_200ml.append(orders)
                     elif quantity == 1:
                         box_of_200ml.append(orders)
                     else:
-                        message += f"order number {orders['order_number']} has {quantity} items and must be sent differently:box of 500ml hand sanitiser\n"
+                        message += f"order number {orders['order_number']} has {quantity} items and must be sent differently:box of 200ml hand sanitiser\n"
+                        message += f"Customer name: {orders['customer_name']}\n Phone Number: {orders['phone']}\n"
+                        message += f"Address:\n {orders['address 1']}\n {orders['address 2']}\n {orders['city']} \n {orders['post_code']}\n"
 
             elif restricted_post_codes:
                 message += f"order number: {order_number} is in the resterticted post code list. Post Code: {post_code}\n"
@@ -369,7 +394,7 @@ def create_ups_file(orders, file_path=None, shop_name=None):
                 'Unit_of_Measure': '',
                 'Reference': order['order_number'],
                 'Packaging_Type': '2',
-                'Declared_Value': "96.50",
+                'Declared_Value': "48.50",
                 'service': "ST",
                 'Delivery_Confirmation': 'S',  # meaning signature required
                 'Email_Notification_1_Address': order['email'],
@@ -400,7 +425,7 @@ if source == "S" and courier == "P":
     create_orders_for_city_sprint(parcel_force_orders)
     create_ups_file(ups_orders, shop_name="Shopify")
 elif source == "S" and courier == "U":
-    message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml = process_shopify_orders()
+    message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml, box_of_100ml, box_of_50ml = process_shopify_orders()
     print(message)
     full_list = parcel_force_orders + ups_orders
     full_list = sorted(full_list, key=lambda i: i['order_number'])
@@ -410,7 +435,11 @@ elif source == "S" and courier == "U":
     print(ups)
     ups = create_ups_file(box_of_200ml, shop_name="Shopify - 200ml")
     print(ups)
-    print(total_processed)
+    ups = create_ups_file(box_of_100ml, shop_name="Shopify - 100ml")
+    print(ups)
+    ups = create_ups_file(box_of_50ml, shop_name="Shopify - 50ml")
+    print(ups)
+
 elif source == "A" and courier == "U":
     message, parcel_force_orders, ups_orders, box_of_500ml, box_of_200ml = process_amazon_orders()
     print(message)
@@ -422,7 +451,18 @@ elif source == "A" and courier == "U":
     print(ups)
     ups = create_ups_file(box_of_200ml, shop_name="Amazon - 200ml")
     print(ups)
-    print(total_processed)
+elif source == "E" and courier == "U":
+    message, ups_orders, box_of_500ml, box_of_200ml, box_of_100ml = process_ebay_orders()
+    print(message)
+    # full_list = full_list, key=lambda i: i['order_number'])
+    ups = create_ups_file(ups_orders, shop_name="eBay - 5Litre")
+    print(ups)
+    ups = create_ups_file(box_of_500ml, shop_name="eBay - 500ml")
+    print(ups)
+    ups = create_ups_file(box_of_200ml, shop_name="eBay - 200ml")
+    print(ups)
+    ups = create_ups_file(box_of_100ml, shop_name="eBay - 100ml")
+    print(ups)
 else:
     print(
         f"Wrong Input or the software the entry is not yet supported {source} and {courier} ")
