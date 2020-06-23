@@ -146,7 +146,6 @@ def process_ebay_orders(file_path=None):
         row_count += 1
 
     order_file.close()
-    print(box_of_500ml)
     return message, ups_orders, box_of_500ml, box_of_200ml, box_of_100ml
 
 

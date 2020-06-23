@@ -19,6 +19,13 @@ def fill_the_empty(row_number):
     order_file = open('imports/shopify-orders.csv', newline='')
     orders_reader = csv.reader(order_file)
     previous_row = row_number - 1
+    # Here we need to determine how many rows we need to go back.
+    import pdb
+    pdb.set_trace()
+    order_list = list(orders_reader)
+    while order_list[previous_row][2] == "":
+        previous_row -= 1
+
     orders = {}
     for order in orders_reader:
         if count == previous_row:
@@ -105,7 +112,7 @@ def process_shopify_orders(file_path=None):
             else:
                 quantity = 0
 
-            northern_ireland = orders['post_code'].lower().startswith('bt')
+            # northern_ireland = orders['post_code'].lower().startswith('bt')
             if orders['status'] == "unfulfilled" and orders['payment_status'] == "paid" and (orders['sku'] == "5017371155890" or orders['sku'] == "CALB10"):
                 if quantity >= 2 and quantity <= 8:
                     for i in range(quantity):
@@ -405,11 +412,10 @@ def create_ups_file(orders, file_path=None, shop_name=None):
             )
             successful_count += 1
 
-        message += f"Found {successful_count} orders for {shop_name} \n{full_path}"
-        total_processed += successful_count
+        message += f"{successful_count} orders for {shop_name}"
         file.close()
-    except:
-        message += "something went wrong creating the UPS file"
+    except Exception as e:
+        message += f"\n{e}\nsomething went wrong creating the UPS file"
 
     return message
 
